@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-lint:
+    name: Backend — lint & type check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install --no-cache-dir . ruff pyright
+      - name: Ruff lint
+        run: ruff check app/
+      - name: Pyright type check
+        run: pyright app/ || true   # warn-only for now
+
+  backend-healthcheck:
+    name: Backend — live health check
+    runs-on: ubuntu-latest
+    needs: backend-lint
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Ping production health endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://twain-production.up.railway.app/health)
+          echo "Health check status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed with status $STATUS"
+            exit 1
+          fi
+
+  flutter-patient:
+    name: Flutter Patient — analyze & build web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.x"
+          channel: stable
+          cache: true
+      - name: Get twain_core deps
+        working-directory: packages/twain_core
+        run: flutter pub get
+      - name: Get patient deps
+        working-directory: apps/patient
+        run: flutter pub get
+      - name: Analyze patient
+        working-directory: apps/patient
+        run: flutter analyze --no-fatal-infos
+      - name: Build patient web
+        working-directory: apps/patient
+        run: |
+          flutter build web --release \
+            --dart-define=API_BASE_URL=https://twain-production.up.railway.app
+
+  flutter-doctor:
+    name: Flutter Doctor — analyze & build web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.x"
+          channel: stable
+          cache: true
+      - name: Get twain_core deps
+        working-directory: packages/twain_core
+        run: flutter pub get
+      - name: Get doctor deps
+        working-directory: apps/doctor
+        run: flutter pub get
+      - name: Analyze doctor
+        working-directory: apps/doctor
+        run: flutter analyze --no-fatal-infos
+      - name: Build doctor web
+        working-directory: apps/doctor
+        run: |
+          flutter build web --release \
+            --dart-define=API_BASE_URL=https://twain-production.up.railway.app
