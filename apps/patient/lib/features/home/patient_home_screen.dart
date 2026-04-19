@@ -77,6 +77,65 @@ class PatientHomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: TTokens.s5),
             TCard(
+              onTap: () => context.push('/prescriptions'),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: TTokens.primary50,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.receipt_long_outlined,
+                      color: TTokens.primary900,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: TTokens.s4),
+                  Expanded(
+                    child: Text(
+                      'My prescriptions',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right,
+                      color: TTokens.neutral400),
+                ],
+              ),
+            ),
+            const SizedBox(height: TTokens.s3),
+            TCard(
+              onTap: () => context.push('/history'),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: TTokens.primary50,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.history,
+                      color: TTokens.primary900,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: TTokens.s4),
+                  Expanded(
+                    child: Text(
+                      'Consultation history',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: TTokens.neutral400),
+                ],
+              ),
+            ),
+            const SizedBox(height: TTokens.s3),
+            TCard(
               onTap: () => context.push('/profile'),
               child: Row(
                 children: [

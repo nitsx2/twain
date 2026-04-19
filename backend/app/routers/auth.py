@@ -23,6 +23,9 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     role: str  # 'patient' | 'doctor'
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
 
 
 class LoginRequest(BaseModel):
@@ -118,11 +121,28 @@ async def register(
     db.add(user)
     await db.flush()
 
+    full_name: str | None = None
+    if body.first_name or body.last_name:
+        full_name = f"{body.first_name or ''} {body.last_name or ''}".strip()
+
     if body.role == "patient":
         code = await _allocate_patient_code(db)
-        db.add(PatientProfile(user_id=user.id, patient_code=code))
+        db.add(
+            PatientProfile(
+                user_id=user.id,
+                patient_code=code,
+                full_name=full_name,
+                phone=body.phone,
+            )
+        )
     else:
-        db.add(DoctorProfile(user_id=user.id))
+        db.add(
+            DoctorProfile(
+                user_id=user.id,
+                full_name=full_name,
+                phone=body.phone,
+            )
+        )
 
     await db.commit()
 

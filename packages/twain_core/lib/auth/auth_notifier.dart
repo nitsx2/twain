@@ -26,12 +26,22 @@ class AuthUser {
 }
 
 class AuthState {
-  const AuthState({this.user, this.loading = false, this.error});
+  const AuthState({
+    this.user,
+    this.loading = false,
+    this.error,
+    this.bootstrapping = true,
+  });
   const AuthState.initial() : this();
 
   final AuthUser? user;
   final bool loading;
   final String? error;
+
+  /// True until we've checked the stored token on startup. Router should show
+  /// a splash/loading screen while this is true so a page refresh doesn't
+  /// flash the login screen.
+  final bool bootstrapping;
 
   bool get isAuthenticated => user != null;
 
@@ -39,6 +49,7 @@ class AuthState {
     AuthUser? user,
     bool? loading,
     String? error,
+    bool? bootstrapping,
     bool clearError = false,
     bool clearUser = false,
   }) {
@@ -46,6 +57,7 @@ class AuthState {
       user: clearUser ? null : (user ?? this.user),
       loading: loading ?? this.loading,
       error: clearError ? null : (error ?? this.error),
+      bootstrapping: bootstrapping ?? this.bootstrapping,
     );
   }
 }
@@ -58,9 +70,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final Ref _ref;
 
   Future<void> _bootstrap() async {
-    final token = await readAuthToken();
-    if (token == null || token.isEmpty) return;
     try {
+      final token = await readAuthToken();
+      if (token == null || token.isEmpty) return;
       final api = _ref.read(apiClientProvider);
       final resp = await api.dio.get<Map<String, dynamic>>('/api/me');
       if (resp.statusCode == 200 && resp.data != null) {
@@ -70,6 +82,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
     } catch (_) {
       await clearAuthToken();
+    } finally {
+      state = state.copyWith(bootstrapping: false);
     }
   }
 
@@ -103,13 +117,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     required String password,
     required String role,
+    String? firstName,
+    String? lastName,
+    String? phone,
   }) async {
     state = state.copyWith(loading: true, clearError: true);
     try {
       final api = _ref.read(apiClientProvider);
       final resp = await api.dio.post<Map<String, dynamic>>(
         '/api/auth/register',
-        data: {'email': email, 'password': password, 'role': role},
+        data: {
+          'email': email,
+          'password': password,
+          'role': role,
+          if (firstName != null && firstName.isNotEmpty)
+            'first_name': firstName,
+          if (lastName != null && lastName.isNotEmpty) 'last_name': lastName,
+          if (phone != null && phone.isNotEmpty) 'phone': phone,
+        },
       );
       if (resp.statusCode != 200 && resp.statusCode != 201 || resp.data == null) {
         state = state.copyWith(
@@ -143,11 +168,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     await clearAuthToken();
-    state = const AuthState.initial().copyWith(clearUser: true);
+    state = const AuthState(bootstrapping: false).copyWith(clearUser: true);
   }
 
   String _extract(Object e) {
-    return e.toString();
+    final msg = e.toString();
+    return msg.length > 200 ? msg.substring(0, 200) : msg;
   }
 }
 

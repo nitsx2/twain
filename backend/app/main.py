@@ -7,6 +7,7 @@ from app.config import get_settings
 from app.routers import auth as auth_router
 from app.routers import doctor as doctor_router
 from app.routers import patient as patient_router
+from app.routers import prescriptions as prescriptions_router
 from app.routers import profile as profile_router
 
 logging.basicConfig(
@@ -41,3 +42,4 @@ app.include_router(auth_router.router)
 app.include_router(profile_router.router)
 app.include_router(patient_router.router)
 app.include_router(doctor_router.router)
+app.include_router(prescriptions_router.router)

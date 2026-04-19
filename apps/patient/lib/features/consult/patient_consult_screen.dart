@@ -185,14 +185,8 @@ class _PatientConsultScreenState extends ConsumerState<PatientConsultScreen> {
                     vertical: TTokens.s3,
                   ),
                   itemCount: msgs.length,
-                  itemBuilder: (_, i) {
-                    final m = msgs[i];
-                    final isPatient = m['sender_role'] == 'patient';
-                    return TChatBubble(
-                      role: isPatient ? TChatRole.user : TChatRole.ai,
-                      child: Text(m['content'] as String? ?? ''),
-                    );
-                  },
+                  itemBuilder: (_, i) =>
+                      _PatientMessage(m: msgs[i]),
                 );
               },
             ),
@@ -309,6 +303,114 @@ class _PatientConsultScreenState extends ConsumerState<PatientConsultScreen> {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _PatientMessage extends StatelessWidget {
+  const _PatientMessage({required this.m});
+  final Map<String, dynamic> m;
+
+  @override
+  Widget build(BuildContext context) {
+    final role = m['sender_role'] as String? ?? 'system';
+    final contentType = m['content_type'] as String? ?? 'text';
+    final content = m['content'] as String? ?? '';
+    final payload = m['payload'] as Map<String, dynamic>?;
+    final isMine = role == 'patient';
+
+    Widget child;
+    String? label;
+
+    if (contentType == 'rx_signed') {
+      label = 'Doctor';
+      final pid = payload?['prescription_id'] as String?;
+      child = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.receipt_long_outlined,
+                  color: TTokens.ai600, size: 18),
+              SizedBox(width: 6),
+              Text(
+                'Prescription issued',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: TTokens.ai700,
+                ),
+              ),
+            ],
+          ),
+          if (content.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(content),
+          ],
+          if (pid != null) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: () =>
+                  GoRouter.of(context).push('/prescription/$pid'),
+              icon: const Icon(Icons.picture_as_pdf_outlined,
+                  color: TTokens.primary900, size: 16),
+              label: const Text(
+                'View prescription',
+                style: TextStyle(
+                  color: TTokens.primary900,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ],
+      );
+    } else if (contentType == 'diagnosis') {
+      label = 'Doctor';
+      final actions =
+          (payload?['action_items'] as List?)?.cast<String>() ?? const [];
+      child = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.medical_information_outlined,
+                  color: TTokens.primary700, size: 18),
+              SizedBox(width: 6),
+              Text(
+                'Diagnosis',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: TTokens.primary700,
+                ),
+              ),
+            ],
+          ),
+          if (content.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(content),
+          ],
+          if (actions.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            for (final a in actions) Text('• $a'),
+          ],
+        ],
+      );
+    } else {
+      child = Text(content);
+    }
+
+    return TChatBubble(
+      role: isMine ? TChatRole.user : TChatRole.ai,
+      senderLabel: label,
+      child: child,
     );
   }
 }

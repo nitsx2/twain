@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -85,6 +87,85 @@ class ConsultApi {
   Future<void> closeConsultation(String id) async {
     await _dio.post('/api/doctor/consultations/$id/close');
   }
+
+  Future<Map<String, dynamic>> uploadRecording(
+    String id,
+    List<int> audioBytes, {
+    String filename = 'consult.webm',
+    String mimeType = 'audio/webm',
+  }) async {
+    final form = FormData.fromMap({
+      'audio': MultipartFile.fromBytes(
+        audioBytes,
+        filename: filename,
+        contentType: DioMediaType.parse(mimeType),
+      ),
+    });
+    final r = await _dio.post<Map<String, dynamic>>(
+      '/api/doctor/consultations/$id/recording',
+      data: form,
+      options: Options(contentType: 'multipart/form-data'),
+    );
+    return r.data ?? {};
+  }
+
+  Future<List<Map<String, dynamic>>> brainChat(
+    String consultationId,
+    String content,
+  ) async {
+    final r = await _dio.post<List<dynamic>>(
+      '/api/doctor/consultations/$consultationId/brain/messages',
+      data: {'content': content},
+    );
+    return (r.data ?? [])
+        .cast<Map<String, dynamic>>()
+        .toList(growable: false);
+  }
+
+  Future<Map<String, dynamic>> draftRx(String consultationId) async {
+    final r = await _dio.post<Map<String, dynamic>>(
+      '/api/doctor/consultations/$consultationId/rx/draft',
+    );
+    return r.data ?? {};
+  }
+
+  Future<Map<String, dynamic>> signRx(
+    String consultationId,
+    Map<String, dynamic> body,
+  ) async {
+    final r = await _dio.post<Map<String, dynamic>>(
+      '/api/doctor/consultations/$consultationId/rx/sign',
+      data: body,
+    );
+    return r.data ?? {};
+  }
+
+  // ── Prescriptions ────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> listPrescriptions() async {
+    final r = await _dio.get<List<dynamic>>('/api/prescriptions');
+    return (r.data ?? [])
+        .cast<Map<String, dynamic>>()
+        .toList(growable: false);
+  }
+
+  Future<List<Map<String, dynamic>>> listPatientConsultations() async {
+    final r = await _dio.get<List<dynamic>>('/api/patient/consultations');
+    return (r.data ?? []).cast<Map<String, dynamic>>().toList(growable: false);
+  }
+
+  Future<List<Map<String, dynamic>>> listDoctorConsultations() async {
+    final r = await _dio.get<List<dynamic>>('/api/doctor/consultations');
+    return (r.data ?? []).cast<Map<String, dynamic>>().toList(growable: false);
+  }
+
+  Future<Uint8List> getPdfBytes(String prescriptionId) async {
+    final r = await _dio.get<List<int>>(
+      '/api/prescriptions/$prescriptionId/pdf',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return Uint8List.fromList((r.data ?? const []).cast<int>());
+  }
 }
 
 final consultApiProvider = Provider<ConsultApi>((ref) {
@@ -112,4 +193,22 @@ final doctorConsultProvider = FutureProvider.autoDispose
 final doctorMessagesProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, String>((ref, id) async {
   return ref.read(consultApiProvider).listDoctorMessages(id);
+});
+
+/// Current user's prescriptions list.
+final prescriptionsProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  return ref.read(consultApiProvider).listPrescriptions();
+});
+
+/// All consultations for patient (history).
+final patientConsultationsProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  return ref.read(consultApiProvider).listPatientConsultations();
+});
+
+/// All consultations for doctor (history).
+final doctorConsultationsProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  return ref.read(consultApiProvider).listDoctorConsultations();
 });

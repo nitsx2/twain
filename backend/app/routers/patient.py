@@ -111,6 +111,33 @@ async def active_consultation(
     return ActiveConsultationOut(active=True, consultation=_serialize_consult(c))
 
 
+@router.get("/consultations", response_model=list[dict])
+async def list_patient_consultations(
+    user: Annotated[User, Depends(require_role("patient"))],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[dict]:
+    r = await db.execute(
+        select(Consultation)
+        .where(Consultation.patient_id == user.id)
+        .order_by(Consultation.created_at.desc())
+    )
+    out: list[dict] = []
+    for c in r.scalars().all():
+        analysis = c.analysis_json or {}
+        out.append(
+            {
+                "id": str(c.id),
+                "status": c.status,
+                "created_at": c.created_at.isoformat(),
+                "intake_done_at": c.intake_done_at.isoformat() if c.intake_done_at else None,
+                "started_at": c.started_at.isoformat() if c.started_at else None,
+                "closed_at": c.closed_at.isoformat() if c.closed_at else None,
+                "diagnosis": analysis.get("patient_diagnosis") if isinstance(analysis, dict) else None,
+            }
+        )
+    return out
+
+
 @router.post("/consultations", response_model=ConsultationOut)
 async def create_consultation(
     user: Annotated[User, Depends(require_role("patient"))],
@@ -251,6 +278,19 @@ async def send_message(
     await db.commit()
 
     return [_serialize_msg(user_msg), _serialize_msg(ai_msg)]
+
+
+@router.get("/consultations", response_model=list[ConsultationOut])
+async def list_consultations(
+    user: Annotated[User, Depends(require_role("patient"))],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[ConsultationOut]:
+    r = await db.execute(
+        select(Consultation)
+        .where(Consultation.patient_id == user.id)
+        .order_by(Consultation.created_at.desc())
+    )
+    return [_serialize_consult(c) for c in r.scalars().all()]
 
 
 @router.post(

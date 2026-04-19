@@ -62,7 +62,42 @@ twain/
 
 ## Deployment
 
-Target: Railway. Backend as a container, Postgres as a plugin, each PWA as its own Railway service. Alembic migrations run as the release command. Details in Phase 8.
+Target: Railway. Backend as a container, Postgres as a plugin, each PWA as its own Railway service. Alembic migrations run as the release command.
+
+### Railway deploy (backend)
+
+1. Create a new Railway project and add a **Postgres** plugin.
+2. Connect this repo. Railway auto-detects `railway.toml` at the root.
+3. Set these environment variables in the Railway service settings:
+
+   | Variable | Value |
+   |----------|-------|
+   | `DATABASE_URL` | Provided automatically by the Postgres plugin |
+   | `SECRET_KEY` | A long random string (e.g. `openssl rand -hex 32`) |
+   | `ANTHROPIC_API_KEY` | Your Anthropic key |
+   | `QUBRID_API_KEY` | Your Qubrid key |
+   | `ALLOWED_ORIGINS` | Comma-separated PWA URLs (e.g. `https://patient.up.railway.app,https://doctor.up.railway.app`) |
+
+4. Deploy. Railway runs `alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT` on startup.
+5. Health check: `GET /health` — Railway will restart the service on failure (up to 3 retries).
+
+### Railway deploy (Flutter PWAs)
+
+Each Flutter app builds to a static site (`flutter build web`) and can be served from any static host (Railway static service, Vercel, Netlify, Cloudflare Pages, etc.).
+
+```bash
+# Patient PWA
+cd apps/patient
+flutter build web --release --base-href /
+# Upload build/web/ to your static host
+
+# Doctor PWA
+cd apps/doctor
+flutter build web --release --base-href /
+# Upload build/web/ to your static host
+```
+
+Set `BACKEND_URL` (or the equivalent API base URL in `packages/twain_core/lib/api/api_client.dart`) to your Railway backend URL.
 
 ## Storage note
 
