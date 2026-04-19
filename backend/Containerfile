@@ -17,9 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Copy source first — pip install needs the `app/` package dir present.
-# Dev uses bind-mount for hot reload; Railway rebuilds on push anyway, so no
-# cache-optimisation penalty worth solving here.
-COPY . /app/
+# Railway build context is the repo root; Containerfile lives in backend/.
+# Copy only the backend subdirectory so pyproject.toml lands at /app/pyproject.toml.
+COPY backend/ /app/
 
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
     && pip install --no-cache-dir .
