@@ -651,15 +651,17 @@ All binary blobs — audio recordings, prescription PDFs, doctor signatures — 
 
 ## Privacy, Safety & Ethics
 
-| Concern | How Twain handles it |
-|---|---|
-| **Patient data privacy** | No PII is sent to third-party AI services beyond what is clinically necessary. Audio is transcribed and deleted from memory; only the text transcript is stored. |
-| **AI misdiagnosis risk** | Twain AI and Brain AI are explicitly prohibited from diagnosing or prescribing in their system prompts. All outputs are **doctor-reviewed** before any prescription is signed. The AI is a tool, not a decision-maker. |
-| **Red-flag triage** | Twain AI detects red-flag symptoms (chest pain, stroke signs, severe bleeding) and urges the patient to seek urgent care — it does not substitute for emergency services. |
-| **Prescription safety** | Rx drafts are clearly labelled as drafts. The doctor reviews and edits before signing. NMC/CDSCO-compliant dosing is used in prompts. |
-| **Data at rest** | All data stored in Railway-managed PostgreSQL with encryption at rest. JWT tokens expire after 24 hours. Passwords are bcrypt-hashed (cost factor 12). |
-| **Consent** | Patients initiate every consultation. Audio recording is uploaded explicitly by the doctor during a live session — no passive recording. |
-| **Bias** | Prompts are explicitly scoped to Indian clinical context (NMC/CDSCO). Indian drug brands are used alongside generics to avoid prescribing inaccessible medications. |
+**Privacy policy:** Twain collects only the minimum clinical data necessary. No PII is shared with third-party AI services beyond what is required for the consultation. Audio is transcribed server-side and only the text transcript is persisted — raw audio is not retained after transcription.
+
+**Safety guardrails:** Twain AI and Brain AI are hard-coded to never diagnose, never prescribe, and never give treatment advice. Every prescription is a **doctor-reviewed draft** — the AI assists, the doctor decides. Red-flag symptom detection (chest pain, stroke, severe bleeding) triggers an urgent-care prompt.
+
+**Data security:** Passwords are bcrypt-hashed. JWT tokens expire in 24 hours. All data encrypted at rest via Railway managed PostgreSQL. HTTPS enforced on all endpoints.
+
+**Bias mitigation:** Prompts are scoped to Indian clinical context (NMC/CDSCO). Indian generic and brand drug names used to avoid prescribing inaccessible medications.
+
+**Consent:** Patients initiate every consultation. Audio upload is an explicit doctor action — no passive recording.
+
+**Misuse prevention:** Role-based access control (JWT `role` claim). Patients cannot access doctor-only messages. Prescriptions are only downloadable by the patient or the signing doctor.
 
 ---
 
