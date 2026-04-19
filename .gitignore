@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# Secrets
+.env
+!.env.example
+*.pem
+*.key
+
+# Flutter
+apps/*/build/
+apps/*/.dart_tool/
+apps/*/.flutter-plugins
+apps/*/.flutter-plugins-dependencies
+apps/*/ios/Pods/
+apps/*/ios/.symlinks/
+apps/*/ios/Flutter/Flutter.framework/
+apps/*/android/.gradle/
+apps/*/android/local.properties
+apps/*/pubspec.lock
+packages/*/build/
+packages/*/.dart_tool/
+packages/*/pubspec.lock
+
+# macOS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Postgres data volume (in case of bind mounts)
+data/

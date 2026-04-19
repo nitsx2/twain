@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: twain
+      POSTGRES_PASSWORD: twain
+      POSTGRES_DB: twain
+    ports:
+      - "5442:5432"
+    volumes:
+      - twain_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U twain -d twain"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Containerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://twain:twain@db:5432/twain
+    ports:
+      - "9494:8000"
+    volumes:
+      - ./backend:/app:z
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  twain_db_data:

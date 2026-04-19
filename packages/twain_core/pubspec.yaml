@@ -1,0 +1,25 @@
+name: twain_core
+description: Shared design system, API client, and auth state for Twain AI patient + doctor apps.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  dio: ^5.7.0
+  flutter_secure_storage: ^9.2.2
+  google_fonts: ^6.2.1
+  go_router: ^14.6.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
