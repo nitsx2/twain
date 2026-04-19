@@ -15,6 +15,16 @@ class Settings(BaseSettings):
 
     database_url: str
 
+    @property
+    def async_database_url(self) -> str:
+        """Ensure the URL uses the asyncpg driver regardless of what Railway injects."""
+        url = self.database_url
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
+
     jwt_secret: str
     jwt_algorithm: str = "HS256"
     jwt_expire_hours: int = 24
